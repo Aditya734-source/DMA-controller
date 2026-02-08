@@ -1,0 +1,59 @@
+module tb_dma;
+
+reg clk = 0;
+reg rst = 1;
+reg [7:0] data_in;
+reg [2:0] instr;
+wire done;
+
+// clock
+always #5 clk = ~clk;
+
+// DUT
+wire WCI;
+wire ACI = 0;
+
+dma_top dut (
+    .clk(clk),
+    .rst(rst),
+    .data_in(data_in),
+    .instr(instr),
+    .WCI(WCI),
+    .ACI(ACI),
+    .done(done)
+);
+
+// simple WCI model
+assign WCI = dut.u_word.word_count == 0;
+
+initial begin
+    // reset
+    #20 rst = 0;
+
+    // load control register
+    data_in = 8'b00000100; // addr_inc=1, word_inc=00
+    instr   = 3'b000;
+    #10 instr = 0;
+
+    // load address
+    data_in = 8'h10;
+    instr   = 3'b101;
+    #10 instr = 0;
+
+    // load word count
+    data_in = 8'd5;
+    instr   = 3'b110;
+    #10 instr = 0;
+
+    // start DMA
+    instr = 3'b111;
+
+    // wait for done
+    wait(done);
+    #20;
+
+    $display("DMA completed successfully");
+    $finish;
+end
+
+endmodule
